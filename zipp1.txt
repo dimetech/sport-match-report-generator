@@ -1,0 +1,40 @@
+
+import os
+import streamlit as st
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.chains.question_answering import load_qa_chain
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+# Load Gemini API Key
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+
+st.set_page_config(page_title="Match Report Generator")
+st.title("🏏 Match Report Generator")
+st.write("Upload a cricket match PDF and get a news-style summary!")
+
+uploaded_file = st.file_uploader("Upload Match Summary PDF", type="pdf")
+
+if uploaded_file:
+    with open("match.pdf", "wb") as f:
+        f.write(uploaded_file.read())
+
+    loader = PyPDFLoader("match.pdf")
+    pages = loader.load()
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    docs = text_splitter.split_documents(pages)
+
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = FAISS.from_documents(docs, embeddings)
+
+    chain = load_qa_chain(ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7), chain_type="stuff")
+
+    query = "Give a news-style cricket match report with highlights, top performances, and outcome."
+    docs = vectorstore.similarity_search(query)
+    result = chain.run(input_documents=docs, question=query)
+
+    st.subheader("📰 Match Summary")
+    st.write(result)

@@ -1,0 +1,13 @@
+streamlit
+altair
+numpy
+pandas
+PyPDF2
+pypdf
+faiss-cpu
+huggingface_hub
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+langchain-huggingface
